@@ -23,10 +23,24 @@ $(function() {
   var username;
   var connected = false;
   var typing = false;
+  var startedTyping = false;
   var lastTypingTime;
   var $currentInput = $usernameInput.focus();
 
   var socket = io();
+  var isiOS = /iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent);
+  var id = -1;
+  var room = "default";
+
+  // Notifications
+  if (!isiOS) {
+    if (!Notification) {
+      alert('Desktop notifications not available in your browser. Try Chromium.');
+      return;
+    }
+    if (Notification.permission !== 'granted')
+      Notification.requestPermission();
+  }
 
   function addParticipantsMessage (data) {
     var message = '';
@@ -49,8 +63,9 @@ $(function() {
       $loginPage.off('click');
       $currentInput = $inputMessage.focus();
 
+      room = getRoom();
       // Tell the server your username
-      socket.emit('add user', username);
+      socket.emit('add user', {"username": username, "room": room});
     }
   }
 
@@ -67,7 +82,7 @@ $(function() {
         message: message
       });
       // tell server to execute 'new message' and send along one parameter
-      socket.emit('new message', message);
+      socket.emit('new message', {"msg": message, "room": room});
     }
   }
 
@@ -155,11 +170,16 @@ $(function() {
   // Updates the typing event
   function updateTyping () {
     if (connected) {
+      if (!startedTyping)
+      {
+        startedTyping = true;
+        socket.emit('started typing', {"room": room});
+      }
       typing = true;
       var message = $inputMessage.val();
       // Prevent markup from being injected into the message
       message = cleanInput(message);
-      socket.emit('typing', message);
+      socket.emit('typing', {"room": room, "msg": message});
       lastTypingTime = (new Date()).getTime();
 
       setTimeout(function () {
@@ -167,7 +187,8 @@ $(function() {
         var timeDiff = typingTimer - lastTypingTime;
         if (timeDiff >= TYPING_TIMER_LENGTH && $inputMessage.val() === "") {
           typing = false;
-          socket.emit('stop typing');
+          startedTyping = false;
+          socket.emit('stop typing', room);
         }
       }, TYPING_TIMER_LENGTH);
       
@@ -179,6 +200,16 @@ $(function() {
       //  }
       //}, TYPING_UPDATE_INTERVAL_LENGTH);
     }
+  }
+
+  function getRoom () {
+    room = window.location.pathname.substr(1);
+    if (room === "")
+    {
+      room = "default"
+    }
+    console.log(`room: ${room}`);
+    return room;
   }
 
   // Gets the 'X is typing' messages of a user
@@ -200,6 +231,19 @@ $(function() {
     return COLORS[index];
   }
 
+  function notifyMe(data) {
+    if (Notification.permission !== 'granted')
+     Notification.requestPermission();
+    else {
+     let notification = new Notification(data.title, {
+      icon: data.icon,
+      body: data.msg,
+     });
+
+     setTimeout(function() {notification.close(notification); console.log("timed out")}, 3000);
+    }
+  }
+
   // Keyboard events
 
   $window.keydown(function (event) {
@@ -211,7 +255,7 @@ $(function() {
     if (event.which === 13) {
       if (username) {
         sendMessage();
-        socket.emit('stop typing');
+        socket.emit('stop typing', room);
         typing = false;
       } else {
         setUsername();
@@ -257,6 +301,8 @@ $(function() {
   socket.on('user joined', function (data) {
     log(data.username + ' joined');
     addParticipantsMessage(data);
+    if (!isiOS)
+      notifyMe({ "title": `${data.username} joined`, "msg": "", "icon": "https://img.icons8.com/dusk/64/000000/connected--v1.png"});
   });
 
   // Whenever the server emits 'user left', log it in the chat body
@@ -264,6 +310,13 @@ $(function() {
     log(data.username + ' left');
     addParticipantsMessage(data);
     removeChatTyping(data);
+    if (!isiOS)
+      notifyMe({ "title": `${data.username} left`, "msg": "", "icon": "https://img.icons8.com/dusk/64/000000/disconnected.png"});
+  });
+
+  socket.on('started typing', function (username) {
+    if (!isiOS)
+      notifyMe({ "title": `${username} started typing!`, "icon": "https://img.icons8.com/flat_round/64/000000/filled-speech-bubble-with-dots.png"});
   });
 
   // Whenever the server emits 'typing', show the typing message
