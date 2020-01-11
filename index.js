@@ -13,7 +13,7 @@ server.listen(port, function () {
 });
 
 app.get("/*", function(request, response) {
-  console.log("serving site.");
+  console.log("Sending site index");
   response.sendFile(__dirname + "/views/index.html");
 });
 
@@ -52,6 +52,10 @@ io.on('connection', function (socket) {
       username: socket.username,
       numUsers: numUsers
     });
+  });
+
+  socket.on('started typing', function (data) {
+    socket.in(data.room).broadcast.emit('started typing', socket.username);
   });
 
   // when the client emits 'typing', we broadcast it to others

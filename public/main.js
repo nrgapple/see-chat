@@ -23,6 +23,7 @@ $(function() {
   var username;
   var connected = false;
   var typing = false;
+  var startedTyping = false;
   var lastTypingTime;
   var $currentInput = $usernameInput.focus();
 
@@ -39,7 +40,6 @@ $(function() {
     }
     if (Notification.permission !== 'granted')
       Notification.requestPermission();
-    console.log("here")
   }
 
   function addParticipantsMessage (data) {
@@ -170,6 +170,11 @@ $(function() {
   // Updates the typing event
   function updateTyping () {
     if (connected) {
+      if (!startedTyping)
+      {
+        startedTyping = true;
+        socket.emit('started typing', {"room": room});
+      }
       typing = true;
       var message = $inputMessage.val();
       // Prevent markup from being injected into the message
@@ -182,6 +187,7 @@ $(function() {
         var timeDiff = typingTimer - lastTypingTime;
         if (timeDiff >= TYPING_TIMER_LENGTH && $inputMessage.val() === "") {
           typing = false;
+          startedTyping = false;
           socket.emit('stop typing', room);
         }
       }, TYPING_TIMER_LENGTH);
@@ -230,6 +236,7 @@ $(function() {
      Notification.requestPermission();
     else {
      let notification = new Notification(data.title, {
+      icon: data.icon,
       body: data.msg,
      });
 
@@ -295,7 +302,7 @@ $(function() {
     log(data.username + ' joined');
     addParticipantsMessage(data);
     if (!isiOS)
-      notifyMe({ "title": `${data.username} joined`, "msg": ""});
+      notifyMe({ "title": `${data.username} joined`, "msg": "", "icon": "https://img.icons8.com/dusk/64/000000/connected--v1.png"});
   });
 
   // Whenever the server emits 'user left', log it in the chat body
@@ -304,7 +311,12 @@ $(function() {
     addParticipantsMessage(data);
     removeChatTyping(data);
     if (!isiOS)
-      notifyMe({ "title": `${data.username} left`, "msg": ""});
+      notifyMe({ "title": `${data.username} left`, "msg": "", "icon": "https://img.icons8.com/dusk/64/000000/disconnected.png"});
+  });
+
+  socket.on('started typing', function (username) {
+    if (!isiOS)
+      notifyMe({ "title": `${username} started typing!`, "icon": "https://img.icons8.com/flat_round/64/000000/filled-speech-bubble-with-dots.png"});
   });
 
   // Whenever the server emits 'typing', show the typing message
