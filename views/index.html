@@ -3,12 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>See Typing Chat</title>
+  <link rel="icon" href="https://img.icons8.com/nolan/64/millenium-eye.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <ul class="pages">
     <li class="chat page">
+      <div id="header" style="flex-wrap: wrap; display: flex; background: grey; position: absolute; right:0; left:0; justify-content:center; align-items:center;">
+        <h2 class="heading" style="flex-grow: 1; padding-left: 10px; text-align:left; letter-spacing: 2px;">SEE-CHAT</h2>
+        <div class="heading" style="flex-wrap: wrap; flex-grow: 1; height: 100%; display:flex ; justify-content:center;align-items:center;align-content:center;">
+          <div style="margin:0; display:block; text-align:center; flex-basis: 100%;">Room</div>
+          <h3 class="heading room" style="margin:0; display:block; text-align:center;  flex-basis: 100%;">default</h3>
+        </div>
+        <h4 class="heading total" style="flex-grow: 1; padding-right: 10px; text-align:right">
+         <span>Online:</span>
+         <span id="users">0</span>
+        </h4>
+      </div>
       <div class="chatArea">
         <ul class="messages"></ul>
       </div>

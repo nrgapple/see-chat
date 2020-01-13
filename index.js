@@ -19,7 +19,7 @@ app.get("/*", function(request, response) {
 
 // Chatroom
 
-var numUsers = 0;
+var totalUsers = 0;
 
 io.on('connection', function (socket) {
   var addedUser = false;
@@ -40,7 +40,7 @@ io.on('connection', function (socket) {
     // we store the username in the socket session for this client
     socket.username = data.username;
     socket.room = data.room;
-    ++numUsers;
+    ++totalUsers;
     addedUser = true;
     socket.join(data.room);
     socket.emit('login', {
@@ -50,7 +50,10 @@ io.on('connection', function (socket) {
     // echo globally (all clients) that a person has connected
     socket.in(data.room).broadcast.emit('user joined', {
       username: socket.username,
-      numUsers: numUsers
+      numUsers: io.sockets.adapter.rooms[data.room].length
+    });
+    io.emit('total online', {
+      totalUsers: totalUsers
     });
   });
 
@@ -76,12 +79,19 @@ io.on('connection', function (socket) {
   // when the user disconnects.. perform this
   socket.on('disconnect', function (room) {
     if (addedUser) {
-      --numUsers;
-
-      // echo globally that this client has left
-      socket.in(socket.room).broadcast.emit('user left', {
-        username: socket.username,
-        numUsers: numUsers
+      --totalUsers;
+      socket.leave(socket.room);
+      console.log(`room: ${socket.room}`);
+      if (io.sockets.adapter.rooms[socket.room])
+      {
+        // echo globally that this client has left
+        socket.in(socket.room).broadcast.emit('user left', {
+          username: socket.username,
+          numUsers: io.sockets.adapter.rooms[socket.room].length
+        });
+      }
+      io.emit('total online', {
+        totalUsers: totalUsers
       });
     }
   });
