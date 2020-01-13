@@ -147,3 +147,24 @@ ul {
   right: 0;
   width: 100%;
 }
+
+@media screen and (max-width: 600px) {
+  .heading {
+    font-size: 90%;
+  }
+  .header {
+    height: 40px;
+  }
+  .chatArea {
+    padding-top: 45px;
+  }
+}
+
+@media screen and (min-width: 601px) {
+  .header {
+    height: 60px;
+  }
+  .chatArea {
+    padding-top: 65px;
+  }
+}
